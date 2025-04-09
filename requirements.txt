@@ -1,0 +1,15 @@
+numpy
+scipy
+pandas
+openpyxl
+matplotlib
+pyyaml
+torch
+torchvision
+torchaudio
+torchinfo
+pytorch-ignite==0.4.12
+transformers
+optuna
+Levenshtein
+scikit-learn

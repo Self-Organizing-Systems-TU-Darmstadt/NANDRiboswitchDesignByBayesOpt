@@ -1,0 +1,62 @@
+data:
+  # Sequence encoder
+  data_directory: "_data/"
+  ngs_sequences_file: "_data/ngs_sequences.txt"
+
+  # Bayesian optimization
+  candidates_path: "_data/candidate_sequences_third_run.txt"
+  constructs_path: "_data/Constructs_fourth_run.xlsx"
+  measurements_path: "_data/Dataset_Mean_fourth_run.xlsx"
+
+
+model_params:
+  MODEL_SAVE_POINTS_DIRECTORY: "model_savepoints/"
+  MODEL_PARAMETERS_DIRECTORY: "model_parameters/"
+  MODEL_REGRESSION_PARAMETERS_DIRECTORY: "model_regression_parameters/"
+
+general:
+  max_sequence_length: 70
+  output_embedding_dim: 128
+
+
+encoder:
+  params_path: "model_parameters/model_dim=128_max-len=70_triplet=True_best_model_val_loss=0.9688_publication_ready.pt"
+  embedding_dim: 128
+  dropout: 0.1
+
+
+regression:
+  dropout: 0.0
+  hidden_dim: 256
+
+
+
+ensemble:
+  ensemble_size: 100
+
+
+training_encoder:
+  triplet_mode: 1
+  triplet_mode_classic_negative_selection: 1
+  train_encoder: 1
+  device: "cpu"
+
+
+training_regression:
+  predict_score: 0
+  max_epochs: 120
+  batch_size: 4
+  split: [ 0.75, 0.25 ] #[ ] is usable for 100% training split
+  learning_rate: 0.0001
+  learning_rate_gamma: 0.99
+  weight_decay: 0.0000001
+  train_encoder: 1
+  device: "cpu"
+  best_models_dir: "_regression_best_models"
+
+
+bayesian_optimization:
+  acquisition_batch_size: 16
+  coverage_probability: 0.95
+  normal_approximation_mode: 0
+
