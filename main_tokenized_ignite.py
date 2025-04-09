@@ -24,8 +24,6 @@ print(f"device = {device_training}")
 print(f"device_training = {device_training}")
 
 
-# ToDo: Follow DRY Paradigm -> Move Identical Code in train and eval_step to a single method.
-# ToDo: Same holds for the triplets versions.
 def train_step(engine, batch):
     global model, optimizer, masked_criterion
     model.train()

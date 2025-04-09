@@ -407,7 +407,6 @@ class AptamerPredictionModel(nn.Module):
         if split is None or len(split) == 0:
             train_dataset = SequenceToExpressionDataset(measurements=measurements.data, tokenizer=tokenizer)
         else:
-            # ToDo: In case validation is implemented: Add to Measurements class, that only measured constructs are considered for validation and not artifically added ones
             datas = measurements.split(split=split, split_by_construct=True, shuffle=True)
             train_dataset, val_dataset = [SequenceToExpressionDataset(data, tokenizer=tokenizer) for data in datas]
             val_loader = DataLoader(dataset=val_dataset, batch_size=batch_size,
