@@ -1,13 +1,15 @@
+[![DOI](https://zenodo.org/badge/942468189.svg)](https://doi.org/10.5281/zenodo.15185168)
+
 # NAND Hybrid Riboswitch Design by Deep Batch Bayesian Optimization
 This repository provides the code and data corresponding to the paper [**NAND Hybrid Riboswitch Design by Deep Batch Bayesian Optimization**](https://www.biorxiv.org/content/10.1101/2025.03.28.645907v1)
  by Daniel Kelvin$, Erik Kubaczka$, Heinz Koeppl*, and Beatrix Suess*, currently available as preprint on bioRxiv.
 
-DK, BS: Department of Biology, TU Darmstadt, Darmstadt, 64287, Germany
-DK, EK, HK: Department of Electrical Engineering and Information Technology, TU Darmstadt, Darmstadt, 64283, Germany
+DK, BS: Department of Biology, TU Darmstadt, Darmstadt, 64287, Germany  
+DK, EK, HK: Department of Electrical Engineering and Information Technology, TU Darmstadt, Darmstadt, 64283, Germany  
 DK, EK, HK, BS: Centre for Synthetic Biology, TU Darmstadt, Darmstadt, 64283, Germany
-$ These authors contributed equally.
- 
-* Correspondence can be addressed to bsuess@bio.tu-darmstadt.de and heinz.koeppl@tu-darmstadt.de
+
+$ These authors contributed equally.  
+\* Correspondence can be addressed to bsuess@bio.tu-darmstadt.de and heinz.koeppl@tu-darmstadt.de.
 
 ## Table of Contents
 1. Introduction
