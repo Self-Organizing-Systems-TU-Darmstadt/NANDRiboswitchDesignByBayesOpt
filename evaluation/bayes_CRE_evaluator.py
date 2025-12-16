@@ -12,8 +12,7 @@ if __name__ == '__main__':
     """
     Prepare Data
     """
-
-    file_path = "../_data_evaluation/CRE/41586_2024_8070_MOESM4_ESM_Malinois_Training_Data.txt"
+    file_path = "../_data_evaluation/CRE/41586_2024_8070_MOESM4_ESM.txt"
     scoring_function = lambda elem: elem["K562_log2FC"] if "K562_log2FC" in elem.index else elem["K562_preds"]
 
 

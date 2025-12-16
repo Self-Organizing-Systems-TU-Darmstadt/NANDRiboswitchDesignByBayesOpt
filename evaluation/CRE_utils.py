@@ -1,11 +1,21 @@
+import argparse
 import os
 import shutil
 import subprocess
+import sys
 from datetime import datetime
 
 import numpy as np
 import pandas as pd
 import torch
+import tqdm
+from lightning import Trainer
+
+from boda2 import boda
+from boda2.boda.common import utils
+from boda2.boda.common.utils import unpack_artifact, model_fn
+
+
 
 # import boda
 
@@ -62,7 +72,7 @@ def split_data(data, split=[0.7, 0.3, 0.0]):
 
 
 def create_command(datafile_path, default_root_dir, artifact_path, min_epochs=60, max_epochs=200):
-    command = ["python3", "src/train.py",
+    command = ["python", "../boda2/src/train.py",
                "--data_module=MPRA_DataModule",
                f"--datafile_path={datafile_path}",  # Needs modification for ensemble (if bagging is done)
                "--sep tab --sequence_column sequence",
@@ -88,7 +98,7 @@ def create_command(datafile_path, default_root_dir, artifact_path, min_epochs=60
                "--loss_criterion=L1KLmixed --beta=5.0",
                "--reduction=mean",
                "--graph_module=CNNTransferLearning",
-               "--parent_weights=_data/my-model.epoch_5-step_19885.pkl",  # Check effect
+               "--parent_weights=../_data_evaluation/CRE/my-model.epoch_5-step_19885.pkl",  # Check effect
                "--frozen_epochs=0",
                "--optimizer=Adam --amsgrad=True",
                "--lr=0.0032658700881052086 --eps=1e-08 --weight_decay=0.0003438210249762151",
@@ -104,7 +114,7 @@ def create_command(datafile_path, default_root_dir, artifact_path, min_epochs=60
     return command
 
 
-def train_model(train_data, val_data, test_data, output_folder="../boda2/_data/derived_datasets/", min_epochs=60, max_epochs=200, identifier=None, model_id=0):
+def train_model(train_data, val_data, test_data, output_folder, min_epochs=60, max_epochs=200, identifier=None, model_id=0):
     if identifier is None:
         now = datetime.now()
         formatted_time = now.strftime("%Y-%m-%d_%H-%M-%S")
@@ -118,9 +128,10 @@ def train_model(train_data, val_data, test_data, output_folder="../boda2/_data/d
     val_data["chr"] = "V"
     test_data["chr"] = "E"
     new_data = pd.concat((train_data, val_data, test_data))
-    os.makedirs(output_folder, exist_ok=True)
     datafile_path = os.path.join(output_folder, f"custom_data_{identifier}.tsv")
     new_data.to_csv(datafile_path, sep="\t")
+
+    # print("DataFile Path:", datafile_path)
 
     # default_root_dir = "/tmp/output/artifacts"                       # The directory where the lightning logs (including model checkpoints) are stored and the directory in which the artifact is created prior to compression
     # artifact_path = "_results/mpra_model/"                           # The output directory of the artifact containing the best model
@@ -136,12 +147,22 @@ def train_model(train_data, val_data, test_data, output_folder="../boda2/_data/d
     command = create_command(datafile_path, default_root_dir, artifact_path, min_epochs=min_epochs,
                              max_epochs=max_epochs)
     joined_command = " ".join(command)
-    # result = subprocess.run(f'bash -c "source ../bashrc; source activate base; conda activate boda2; pip3 uninstall -y numpy; pip3 install -U numpy; conda info; python3 -V; {joined_command}"', capture_output=False, shell=True)
-    result = subprocess.run(
-        f'bash -c "source ../bashrc; source activate base; conda activate boda2; conda info; python3 -V; CUDA_VISIBLE_DEVICES={device_id} {joined_command}"',
-        capture_output=True, shell=True)
 
+    # print("COMMAND:", joined_command)
+    from boda2.src import train
+    args = arg_parser(joined_command.split(" ")[1:])
+
+    train.main(args=args)
+
+    #    print("Command:", f'bash -c "source ../bashrc; source activate base; conda activate boda2; conda info; python3 -V; CUDA_VISIBLE_DEVICES={device_id} {joined_command}"')
+    # result = subprocess.run(f'bash -c "source ../bashrc; source activate base; conda activate boda2; pip3 uninstall -y numpy; pip3 install -U numpy; conda info; python3 -V; {joined_command}"', capture_output=False, shell=True)
+    # result = subprocess.run(f'bash -c "source ../bashrc; source activate base; conda activate boda2; conda info; python3 -V; CUDA_VISIBLE_DEVICES={device_id} {joined_command}"', capture_output=True, shell=True)
+    # result = subprocess.run(f'source activate base; conda activate  C:/Users/C3PO-9/anaconda3/envs/NANDRiboswitchDesignByBayesOpt; conda info; python -V; CUDA_VISIBLE_DEVICES={device_id} {joined_command}', capture_output=True, shell=True)
+    # print("STDOUT:", result.stdout)
+    # print("")
+    # print("STDERR:", result.stderr)
     artifact_files = os.listdir(artifact_path)
+
     if len(artifact_files) == 0:
         raise Exception(f"Training of model {identifier} was not successful")
     elif len(artifact_files) > 1:
@@ -182,8 +203,8 @@ def prepare_model(model_path, model_dir, model_id=0):
     model_path: the path to the model
     returns: the model
     """
-    print("PREPARE MODEL MODEL_PATH:", model_path)
-    print("PREPARE MODEL MODEL_DIR:", model_dir)
+    # print("PREPARE MODEL MODEL_PATH:", model_path)
+    # print("PREPARE MODEL MODEL_DIR:", model_dir)
     my_model, model_dir = load_model(model_path, download_path=model_dir, model_id=model_id)
     input_len = torch.load(os.path.join(model_dir, 'torch_checkpoint.pt'), weights_only=False)[
         'model_hparams'].input_len
@@ -243,7 +264,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 import tarfile
-# from boda import model as _model
+from boda import model as _model
 
 def unpack_artifact(artifact_path, download_path='./'):
     """
@@ -255,7 +276,7 @@ def unpack_artifact(artifact_path, download_path='./'):
     """
     print("Artifact Path:", artifact_path)
     if 'gs' in artifact_path:
-        subprocess.call(['gsutil', 'cp', artifact_path, download_path])
+        subprocess.call(['gsutil','cp',artifact_path,download_path])
         if os.path.isdir(download_path):
             tar_model = os.path.join(download_path, os.path.basename(artifact_path))
         elif os.path.isfile(download_path):
@@ -269,7 +290,6 @@ def unpack_artifact(artifact_path, download_path='./'):
     shutil.unpack_archive(tar_model, download_path)
     print(f'archive unpacked in {download_path}', file=sys.stderr)
 
-
 def model_fn(model_dir):
     """
     Load a model from a directory.
@@ -280,22 +300,22 @@ def model_fn(model_dir):
     Returns:
         torch.nn.Module: Loaded model in evaluation mode.
     """
-    print("Loading Torch Weights:", os.path.abspath(os.path.join(model_dir, 'torch_checkpoint.pt')))
-    checkpoint = torch.load(os.path.join(model_dir, 'torch_checkpoint.pt'), weights_only=False)
-    print("Loaded Torch Weights:", os.path.abspath(os.path.join(model_dir, 'torch_checkpoint.pt')))
+    print("Loading Torch Weights:", os.path.abspath(os.path.join(model_dir,'torch_checkpoint.pt')))
+    checkpoint = torch.load(os.path.join(model_dir,'torch_checkpoint.pt'), weights_only=False)
+    print("Loaded Torch Weights:", os.path.abspath(os.path.join(model_dir,'torch_checkpoint.pt')))
     model_module = getattr(_model, checkpoint['model_module'])
     print("Attributes")
     TEST = vars(checkpoint['model_hparams'])
     print("VARS")
-    model = model_module(**vars(checkpoint['model_hparams']))
+    model        = model_module(**vars(checkpoint['model_hparams']))
     print("Module")
     model.load_state_dict(checkpoint['model_state_dict'])
     print(f'Loaded model from {checkpoint["timestamp"]} in eval mode')
     model.eval()
     return model
 
-
 def load_model(artifact_path, download_path="./", model_id=0):
+
     USE_CUDA = torch.cuda.device_count() >= 1
 
     if os.path.isdir(download_path):
@@ -357,3 +377,52 @@ def dna2tensor(sequence_str, vocab_list=["A", "G", "C", "T"]):
         seq_tensor[vocab_list.index(letter), letterIdx] = 1
     seq_tensor = torch.Tensor(seq_tensor)
     return seq_tensor
+
+
+"""
+Modified from https://github.com/sjgosai/boda2/blob/main/src/train.py
+"""
+
+def arg_parser(custom_args):
+    parser = argparse.ArgumentParser(description="BODA trainer", add_help=False)
+    group = parser.add_argument_group('Main args')
+    group.add_argument('--data_module', type=str, required=True, help='BODA data module to process dataset.')
+    group.add_argument('--model_module', type=str, required=True, help='BODA model module to fit dataset.')
+    group.add_argument('--graph_module', type=str, required=True, help='BODA graph module to define computations.')
+    group.add_argument('--artifact_path', type=str, default='/opt/ml/checkpoints/',
+                       help='Path where model artifacts are deposited.')
+    group.add_argument('--pretrained_weights', type=str, help='Pretrained weights.')
+    group.add_argument('--checkpoint_monitor', type=str, help='String to monior PTL logs if saving best.')
+    group.add_argument('--stopping_mode', type=str, default='min', help='Goal for monitored metric e.g. (max or min).')
+    group.add_argument('--stopping_patience', type=int, default=100,
+                       help='Number of epochs of non-improvement tolerated before early stopping.')
+    group.add_argument('--tolerate_unknown_args', type=utils.str2bool, default=False,
+                       help='Skips unknown command line args without exceptions. Useful for HPO, but high risk of silent errors.')
+    known_args, leftover_args = parser.parse_known_args(custom_args[1:])
+
+    Data = getattr(boda.data, known_args.data_module)
+    Model = getattr(boda.model, known_args.model_module)
+    Graph = getattr(boda.graph, known_args.graph_module)
+
+    parser = Data.add_data_specific_args(parser)
+    parser = Model.add_model_specific_args(parser)
+    parser = Graph.add_graph_specific_args(parser)
+
+    known_args, leftover_args = parser.parse_known_args(custom_args[1:])
+
+    parser = Data.add_conditional_args(parser, known_args)
+    parser = Model.add_conditional_args(parser, known_args)
+    parser = Graph.add_conditional_args(parser, known_args)
+
+    parser = Trainer.add_argparse_args(parser)
+    parser.add_argument('--help', '-h', action='help')
+
+    if known_args.tolerate_unknown_args:
+        args, leftover_args = parser.parse_known_args(custom_args[1:])
+        print("Skipping unexpected args. Check leftovers for typos:", file=sys.stderr)
+        print(leftover_args, file=sys.stderr)
+    else:
+        args = parser.parse_args(custom_args[1:])
+
+    args = boda.common.utils.organize_args(parser, args)
+    return args

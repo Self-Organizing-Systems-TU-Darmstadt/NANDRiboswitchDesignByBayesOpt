@@ -2,35 +2,38 @@ import json
 import os
 import shutil
 import time
+from datetime import datetime
+from multiprocessing import Pool
 from multiprocessing.pool import ThreadPool
 
 import numpy as np
 import pandas as pd
 import torch
 import torch.multiprocessing as multiprocessing
-from datetime import datetime
-
 import tqdm
 import yaml
-from torch import nn
+from scipy.stats import norm
 
 import my_setup
-from bayesian_optimization.acquisition_functions import ThompsonSampling, UpperConfidenceBound
-from boda2.analysis.SG011__GPytorch.single_gpu_gp import output
-from data_processing.masked_sequence_model_token_based_triplet_dataset import Sequences
-from data_processing.sequence_to_expression_dataset import Measurements, SequenceToExpressionDataset
+from bayesian_optimization.acquisition_functions import UpperConfidenceBound, BatchAcquisitionFunction
 # from evaluation.CRE_utils import *
 from evaluation.CRE_utils import dna2tensor, train_model, split_data, get_time_stamp, prepare_model, evaluate_model
-from evaluation.Model_Trainer_and_Executer import identifier
-from models.aptamer_prediction_model import AptamerPredictionEnsembleModel
 
-from multiprocessing import Pool
+
+class Measurements:
+
+    def __init__(self, data):
+        self.data = data
+
+    def __len__(self):
+        return len(self.data)
 
 
 class PromoterEnsembleModel:
     def __init__(self, config):
         self.config = config
         self.ensemble_size = config["ensemble"]["ensemble_size"]
+        self.ensemble_size = 2
 
         self.model_paths = [None] * self.ensemble_size
 
@@ -38,7 +41,7 @@ class PromoterEnsembleModel:
 
     def __call__(self, domain, train_mode=False, combine_outputs=True, evaluate_parallel=True, output_attentions=False,
                  *args, **kwargs):
-        def apply_model(model_path, model_id, sequences, seq_loader):
+        def apply_model(model_path, identifier, model_id, sequences, seq_loader):
 
             model, flank_builder = prepare_model(model_path, model_dir=os.path.join("./_intermediate/", identifier),
                                                  model_id=model_id)
@@ -46,62 +49,56 @@ class PromoterEnsembleModel:
                                      flank_builder=flank_builder, model_id=model_id)
             return pred_df
 
+        self.model_paths = ["_results/mpra_model/model_model_001\model_artifacts__20251216_162628__688811.tar.gz",
+                            "_results/mpra_model/model_model_000\model_artifacts__20251216_162627__634186.tar.gz"]
         model_paths = self.model_paths
         if any(map(lambda x: x is None, model_paths)):
             raise Exception("Model is not trained!")
 
-
-        argument_list = [(model_path, iX, domain[0], domain[1]) for iX, model_path in enumerate(self.model_paths)]
+        argument_list = [(model_path, f"model_{iX:03d}", iX, domain[0], domain[1]) for iX, model_path in
+                         enumerate(self.model_paths)]
 
         with ThreadPool(self.pool_size) as pool:
             # model_path = train_model(*args)
             results = pool.starmap(apply_model, argument_list)
 
-        model_outputs = None
-
-        if output_attentions:
-            attentions = [elem[1] for elem in model_outputs]
-            model_outputs = [elem[0] for elem in model_outputs]
-            attentions = [weights.unsqueeze(-1) for weights in attentions]
-            attentions = torch.cat(attentions, dim=-1)
-
-        model_outputs = [output.unsqueeze(-1) for output in model_outputs]
-        model_outputs = torch.cat(model_outputs, dim=-1)
+        model_outputs = np.stack([elem[["K562_preds", "HepG2_preds", "SKNSH_preds"]] for elem in results], axis=-1)
 
         if combine_outputs:
             model_outputs = torch.mean(model_outputs, dim=-1)
 
-        if output_attentions:
-            return model_outputs, attentions
         return model_outputs
 
     def fit(self, measurements=None, *args, **kwargs):
+        return
         split = [0.75, 0.25, 0.0]
+
+        data = measurements.data
 
         time_stamp = get_time_stamp()
 
         argument_list = []
         for iX in range(self.ensemble_size):
             # Bagging by random subsampling of the dataset
-            train_indexes, validation_indexes, test_indexes = split_data(measurements, split=split)
-            train_data = pd.DataFrame(measurements.iloc[train_indexes])
-            val_data = pd.DataFrame(measurements.iloc[validation_indexes])
-            test_data = pd.DataFrame(measurements.iloc[test_indexes])
+            train_indexes, validation_indexes, test_indexes = split_data(data, split=split)
+            train_data = pd.DataFrame(data.iloc[train_indexes])
+            val_data = pd.DataFrame(data.iloc[validation_indexes])
+            test_data = pd.DataFrame(data.iloc[test_indexes])
             if split[2] == 0.0:
-                test_data = pd.DataFrame(measurements.iloc[:2])
+                test_data = pd.DataFrame(data.iloc[:2])
 
             identifier = f"model_{iX:03d}"
             output_folder = os.path.join("../_data_evaluation/CRE/custom/training_data/", f"{time_stamp}_{identifier}")
             os.makedirs(output_folder, exist_ok=True)
-            argument_list.append((train_data, val_data, test_data, output_folder, 60, 200, identifier, iX))
+            argument_list.append((train_data, val_data, test_data, output_folder, 1, 1, identifier, iX))
 
         start = time.time()
-        with Pool(self.pool_size) as pool:
-
+        with ThreadPool(self.pool_size) as pool:
             # model_path = train_model(*args)
-            pool.starmap(train_model, argument_list)
-
+            model_paths = pool.starmap(train_model, argument_list)
         end = time.time()
+
+        self.model_paths = model_paths
         print(
             f"Training of {self.ensemble_size} models took {end - start} s ({(end - start) / self.ensemble_size} s per model on average)")
 
@@ -111,79 +108,69 @@ class PromoterEnsembleModel:
         return self
 
 
-# def model_based_optimization_loop(data, n_init, n_rounds, q, identifier="SingleRun", model_id=0, output_directory=None):
-#     split = [0.7, 0.3, 0.0]
-#
-#     time_stamp = get_time_stamp()
-#
-#     output_file = None
-#     if output_directory:
-#         # output_dir = f"_output_backup/"
-#         output_dir = output_directory
-#         output_file = os.path.join(output_dir, f"{identifier}_{time_stamp}.tsv")
-#         os.makedirs(output_dir, exist_ok=True)
-#
-#     print(f"{identifier}: Preparing Sequences")
-#     sequences = data["sequence"]
-#     seq_tensor = torch.stack([dna2tensor(seq) for seq in tqdm.tqdm(sequences, total=len(sequences))],
-#                              dim=0)
-#     seq_dataset = torch.utils.data.TensorDataset(seq_tensor)
-#     seq_loader = torch.utils.data.DataLoader(seq_dataset, batch_size=128)
-#
-#     print(f"{identifier}: Creating Initial Dataset")
-#     initial_data_indexes = np.random.choice(np.arange(len(data)), replace=False, size=n_init)
-#     initial_data = data.iloc[initial_data_indexes]
-#
-#     result_data = pd.DataFrame(initial_data)
-#     # result_data_indexes = initial_data_indexes.copy()
-#
-#     result_data["round"] = 0
-#
-#     for iR in range(n_rounds):
-#         train_indexes, validation_indexes, test_indexes = split_data(result_data, split=split)
-#         train_data = pd.DataFrame(data.iloc[train_indexes])
-#         val_data = pd.DataFrame(data.iloc[validation_indexes])
-#         test_data = pd.DataFrame(data.iloc[test_indexes])
-#         if split[2] == 0.0:
-#             test_data = pd.DataFrame(data.iloc[:2])
-#
-#         candidate_sequences = data.loc[np.logical_not(data["sequence"].isin(list(result_data["sequence"])))]
-#
-#         print(f"{identifier} {iR}: Training Model")
-#         model_path = train_model(train_data, val_data, test_data, min_epochs=6, max_epochs=20, identifier=identifier,
-#                                  model_id=model_id)
-#         print(f"{identifier} {iR}: Trained Model ({model_path})")
-#         model, flank_builder = prepare_model(model_path, model_dir=os.path.join("./_intermediate/", identifier),
-#                                              model_id=model_id)
-#         print(f"{identifier} {iR}: Prepared Model")
-#         pred_df = evaluate_model(sequences=sequences, sequence_loader=seq_loader, model=model,
-#                                  flank_builder=flank_builder, model_id=model_id)
-#         print(f"{identifier} {iR}: Evaluated Model")
-#
-#         pred_df["score"] = pred_df.apply(scoring_function, axis=1)
-#         pred_df = pred_df.sort_values(by="score", ascending=False)
-#
-#         candidates = pred_df.iloc[:q]
-#
-#         new_data = pd.DataFrame(data.loc[candidates.index])
-#         new_data["round"] = iR + 1
-#         result_data = pd.concat((result_data, new_data))
-#
-#         if output_file:
-#             result_data.to_csv(output_file, sep="\t")
-#         print(f"{identifier} {iR}: Currently highest score {np.max(result_data['score'])}")
-#
-#     return result_data
+class UpperConfidenceBound(BatchAcquisitionFunction):
+    def __init__(self, model, model_args, domain, data, model_output_transform=None, config=None):
+        super().__init__(model, model_args, domain, data, model_output_transform=model_output_transform, config=config)
+        self.label = "UpperConfidenceBound"
+        self.coverage_probability = config["bayesian_optimization"]["coverage_probability"]
+        self.normal_approximation_mode = config["bayesian_optimization"]["normal_approximation_mode"]
+        self.beta = norm().ppf(self.coverage_probability)
+        self.std_dev_scaler = 1
+        pass
+
+    def utility_function(self):
+        domain = self.domain
+        start = time.time()
+        model_outputs = self.model(domain, combine_outputs=False)
+
+        end = time.time()
+        duration = end - start
+        print(
+            f"Model Evaluation for {len(domain[0])} entries took {duration} s ({duration / len(domain[0])} s per sample)",
+            file=self.log_file)
+
+        transformed_output = model_outputs
+        # In case the output is the expression level, transform to the score first and derive then the UCB
+        if self.model_output_transform is not None:
+            transformed_output = self.model_output_transform(model_outputs)
+        # transformed_output is of shape M x 1 x N with M the number of sequences and N the ensemble size
+
+        means = np.mean(transformed_output, axis=-1)
+        if self.normal_approximation_mode:
+            # Determination of the UCB via a normal distribution approximation of the data
+
+            std_devs = np.std(transformed_output, axis=-1)
+            means = means[:, 0]
+            std_devs = std_devs[:, 0]
+            ucb = means + self.beta * self.std_dev_scaler * std_devs
+        else:
+            ensemble_size = transformed_output.shape[-1]
+            index = ensemble_size * self.coverage_probability
+            index = index - 1  # Shift to 0 to N-1 indexing
+            if index - int(index) == 0:
+                # In case the index is an integer value, take the average of the current and next
+                index = int(index)
+                indexes = [index, index + 1]
+            else:
+                indexes = [int(np.ceil(index))]  # Round up to the next full Integer
+
+            sorted_output = np.sort(transformed_output, axis=-1)
+            ucb = np.mean(sorted_output[:, 0, indexes], axis=-1, dtype=float)
+
+        return means, ucb, model_outputs
 
 
 def main(measurements, candidate_sequences, identifier=""):
     with open("config.yaml", "r") as file:
         config = yaml.safe_load(file)
 
-    multiprocessing.set_start_method("spawn")
+    # multiprocessing.set_start_method("spawn")
 
     my_setup.DEVICE = "cpu"
     my_setup.DEVICE_TRAINING = "cpu"
+    conditions = ["K562_log2FC", "HepG2_log2FC", "SKNSH_log2FC"]
+    my_setup.LIGAND_COMBINATIONS = conditions
+
     """
     Setup
     """
@@ -208,6 +195,8 @@ def main(measurements, candidate_sequences, identifier=""):
     """
     Load the data
     """
+
+    scoring_function = lambda elem: elem["K562_log2FC"] if "K562_log2FC" in elem else elem["K562_preds"]
     # Training Data
     measurements = measurements
     training_data_size = len(measurements)
@@ -237,11 +226,10 @@ def main(measurements, candidate_sequences, identifier=""):
             transformed_output = np.empty(shape=(M, 1, N))
             for iM in range(M):
                 for iN in range(N):
-                    expression_levels = {combi: model_outputs[iM, iC, iN] for iC, combi in
-                                         enumerate(my_setup.LIGAND_COMBINATIONS)}
-                    score = my_setup.SCORE_FUNC(expression_levels)
+                    expression_levels = {combi: model_outputs[iM, iC, iN]
+                                         for iC, combi in enumerate(conditions)}
+                    score = scoring_function(expression_levels)
                     transformed_output[iM, 0, iN] = score
-            raise Exception("Check Validit")
             return transformed_output
 
     """
@@ -300,7 +288,11 @@ The evaluation is done in silico with the pre-existing dataset: _data_evaluation
 """
 if __name__ == '__main__':
     measurements = pd.read_csv("../_data_evaluation/CRE/custom/measurements.tsv", sep="\t")
+    measurements["Sequence"] = measurements["sequence"]
+    measurements = Measurements(measurements)
     with open("../_data_evaluation/CRE/custom/candidate_sequences.txt") as file:
         candidate_sequences = file.read().splitlines()
+
+    candidate_sequences = candidate_sequences[:1000]
 
     main(measurements, candidate_sequences)
