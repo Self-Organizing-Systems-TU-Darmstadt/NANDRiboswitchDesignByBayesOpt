@@ -134,12 +134,16 @@ def train_model(train_data, val_data, test_data, output_folder, min_epochs=60, m
 
     # default_root_dir = "/tmp/output/artifacts"                       # The directory where the lightning logs (including model checkpoints) are stored and the directory in which the artifact is created prior to compression
     # artifact_path = "_results/mpra_model/"                           # The output directory of the artifact containing the best model
-    default_root_dir = os.path.join("/tmp/output/artifacts/", f"model_{identifier}")
+    default_root_dir = os.path.join("tmp/output/artifacts/", f"model_{identifier}")
     artifact_path = os.path.join("_results/mpra_model/", f"model_{identifier}")
 
     if os.path.exists(artifact_path):
         shutil.rmtree(artifact_path)
     os.makedirs(artifact_path)
+
+    if os.path.exists(default_root_dir):
+        shutil.rmtree(default_root_dir)
+    os.makedirs(default_root_dir)
 
     device_id = model_id % torch.cuda.device_count()
 

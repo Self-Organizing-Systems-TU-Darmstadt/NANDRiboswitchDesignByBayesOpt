@@ -193,16 +193,7 @@ def main(measurements, candidate_sequences, identifier=""):
     Setup
     """
 
-    # Get the current timestamp
-    current_timestamp = datetime.now()
-    # Format the timestamp
-    formatted_timestamp = current_timestamp.strftime("%Y-%m-%d_%H-%M-%S")
-
-    suffix = "" if identifier == "" else f"_{identifier}"
-    results_dir = os.path.join("_results", formatted_timestamp + suffix + os.sep)
-    os.makedirs(results_dir)
-
-    config["log_dir"] = results_dir
+    # config["log_dir"] = results_dir
     bo_config = config["bayesian_optimization"]
     acquisition_batch_size = bo_config["acquisition_batch_size"]
     ensemble_size = config["ensemble"]["ensemble_size"]
@@ -255,50 +246,23 @@ def main(measurements, candidate_sequences, identifier=""):
     """
     fit_args = {}
 
-    start_time = time.time()
     ac_func = acquisition_method(model=model, domain=domain, data=measurements, model_args=fit_args,
                                  model_output_transform=model_output_transform, config=config)
     proposals = ac_func(acquisition_batch_size)
-
-    end_time = time.time()
-    duration = end_time - start_time
 
     """
     Clean Up Model
     """
     model.clear()
 
-    """
-    Output results
-    """
-    print("\n\n--------------------------------------------------------")
-    print(
-        f"The single Bayesian Optimization step took {duration} seconds ({duration * 1.0 / acquisition_batch_size} s per proposal).")
-    print("The sequences selected for further evaluation are: ")
-    for elem in proposals:
-        print(elem, ":", proposals[elem])
-    print("--------------------------------------------------------")
-
-    """
-    Store the results
-    """
-
-    predictions_results_path = f"{results_dir}/bayesian_optimization_run_results_{formatted_timestamp}.xlsx"
-    proposals_path = f"{results_dir}/bayesian_optimization_proposals_{formatted_timestamp}.json"
-    measurements.data.to_excel(predictions_results_path)
-
     results_info = {"Method": acquisition_method.__name__,
                     "Ensemble Size": ensemble_size,
                     "Acquisition Batch Size": acquisition_batch_size,
                     "Execution Time": duration,
-                    "Timestamp": formatted_timestamp,
                     "Domain Size": len(domain[0]),
-                    "Training Data Size": training_data_size}
-    results_info["Proposals"] = proposals
-    with open(proposals_path, "w") as file:
-        json.dump(results_info, file, indent=4)
-
-    pass
+                    "Training Data Size": training_data_size,
+                    "Proposals": proposals}
+    return proposals, results_info
 
 
 """
@@ -318,4 +282,47 @@ if __name__ == '__main__':
 
     candidate_sequences = candidate_sequences[:1000]
 
-    main(measurements, candidate_sequences)
+    # Get the current timestamp
+    current_timestamp = datetime.now()
+    # Format the timestamp
+    formatted_timestamp = current_timestamp.strftime("%Y-%m-%d_%H-%M-%S")
+
+    identifier = ""
+
+    suffix = "" if identifier == "" else f"_{identifier}"
+    results_dir = os.path.join("_results", formatted_timestamp + suffix + os.sep)
+    os.makedirs(results_dir)
+
+    start_time = time.time()
+
+    # Run Bayesian Optimization
+    proposals, results_info = main(measurements, candidate_sequences, results_dir)
+
+    end_time = time.time()
+    duration = end_time - start_time
+
+    """
+        Output results
+        """
+    print("\n\n--------------------------------------------------------")
+    print(
+        f"The single Bayesian Optimization step took {duration} seconds ({duration * 1.0 / acquisition_batch_size} s per proposal).")
+    print("The sequences selected for further evaluation are: ")
+    for elem in proposals:
+        print(elem, ":", proposals[elem])
+    print("--------------------------------------------------------")
+
+    """
+    Store the results
+    """
+
+    predictions_results_path = f"{results_dir}/bayesian_optimization_run_results_{formatted_timestamp}.xlsx"
+    proposals_path = f"{results_dir}/bayesian_optimization_proposals_{formatted_timestamp}.json"
+    measurements.data.to_excel(predictions_results_path)
+
+    results_info["Timestamp"] = formatted_timestamp
+
+    with open(proposals_path, "w") as file:
+        json.dump(results_info, file, indent=4)
+
+    pass
