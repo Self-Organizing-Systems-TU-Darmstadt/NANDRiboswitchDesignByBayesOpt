@@ -2,12 +2,17 @@ import os
 
 import numpy as np
 import pandas as pd
+import yaml
 
 if __name__ == '__main__':
+    with open("config.yaml", "r") as file:
+        config = yaml.safe_load(file)
 
-    n_init = 34
-    n_rounds = 3
-    q = 16
+    bo_config = config["bayesian_optimization"]
+
+    n_init = bo_config["n_init"]
+    n_rounds = bo_config["n_rounds"]
+    q = bo_config["acquisition_batch_size"]
 
     """
     Prepare Data
@@ -31,8 +36,6 @@ if __name__ == '__main__':
     - Measurements Dataframe
     - Candidates (same for all) 
     """
-
-
 
     output_directory = os.path.join("../", "_data_evaluation", "CRE", "custom")
     os.makedirs(output_directory, exist_ok=True)

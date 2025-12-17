@@ -3,6 +3,7 @@ import os
 import shutil
 import time
 from datetime import datetime
+from itertools import starmap
 from multiprocessing import Pool
 from multiprocessing.pool import ThreadPool
 
@@ -33,7 +34,7 @@ class PromoterEnsembleModel:
     def __init__(self, config):
         self.config = config
         self.ensemble_size = config["ensemble"]["ensemble_size"]
-        self.ensemble_size = 2
+        self.ensemble_size = 1
 
         self.model_paths = [None] * self.ensemble_size
 
@@ -49,8 +50,8 @@ class PromoterEnsembleModel:
                                      flank_builder=flank_builder, model_id=model_id)
             return pred_df
 
-        self.model_paths = ["_results/mpra_model/model_model_001\model_artifacts__20251216_162628__688811.tar.gz",
-                            "_results/mpra_model/model_model_000\model_artifacts__20251216_162627__634186.tar.gz"]
+        # self.model_paths = ["_results/mpra_model/model_model_001\model_artifacts__20251216_162628__688811.tar.gz",
+        #                     "_results/mpra_model/model_model_000\model_artifacts__20251216_162627__634186.tar.gz"]
         model_paths = self.model_paths
         if any(map(lambda x: x is None, model_paths)):
             raise Exception("Model is not trained!")
@@ -70,11 +71,12 @@ class PromoterEnsembleModel:
         return model_outputs
 
     def fit(self, measurements=None, *args, **kwargs):
-        return
+
         split = [0.75, 0.25, 0.0]
 
-        data = measurements.data
+        self.clear()
 
+        data = measurements.data
         time_stamp = get_time_stamp()
 
         argument_list = []
@@ -93,9 +95,10 @@ class PromoterEnsembleModel:
             argument_list.append((train_data, val_data, test_data, output_folder, 1, 1, identifier, iX))
 
         start = time.time()
-        with ThreadPool(self.pool_size) as pool:
-            # model_path = train_model(*args)
-            model_paths = pool.starmap(train_model, argument_list)
+        # with ThreadPool(self.pool_size) as pool:
+        #     # model_path = train_model(*args)
+        #     model_paths = pool.starmap(train_model, argument_list)
+        model_paths = list(starmap(train_model, argument_list))
         end = time.time()
 
         self.model_paths = model_paths
@@ -106,6 +109,21 @@ class PromoterEnsembleModel:
         for args in argument_list:
             shutil.rmtree(args[3], ignore_errors=True)
         return self
+
+    def clear(self):
+        if self.model_paths is not None:
+            for model_path in self.model_paths:
+                if model_path is not None and os.path.exists(model_path):
+                    os.remove(model_path)
+
+                print("ToDo: Tidy up all the other stuff of the model")
+
+        if os.path.exists("_results/mpra_model/"):
+            shutil.rmtree("_results/mpra_model/", ignore_errors=True)
+        if os.path.exists("/tmp/output/"):
+            shutil.rmtree("/tmp/output/", ignore_errors=True)
+        if os.path.exists("./_intermediate/"):
+            shutil.rmtree("./_intermediate/", ignore_errors=True)
 
 
 class UpperConfidenceBound(BatchAcquisitionFunction):
@@ -244,6 +262,11 @@ def main(measurements, candidate_sequences, identifier=""):
 
     end_time = time.time()
     duration = end_time - start_time
+
+    """
+    Clean Up Model
+    """
+    model.clear()
 
     """
     Output results

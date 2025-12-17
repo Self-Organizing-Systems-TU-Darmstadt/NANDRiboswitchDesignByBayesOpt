@@ -16,7 +16,6 @@ from boda2.boda.common import utils
 from boda2.boda.common.utils import unpack_artifact, model_fn
 
 
-
 # import boda
 
 def get_time_stamp():
@@ -52,6 +51,7 @@ def load_results(dir_path):
 
     return results_data, identifier
 
+
 def split_data(data, split=[0.7, 0.3, 0.0]):
     train_size = int(len(data) * split[0])
     test_size = int(len(data) * split[2])
@@ -67,8 +67,6 @@ def split_data(data, split=[0.7, 0.3, 0.0]):
     # test_data = data[test_indexes]
 
     return train_indexes, val_indexes, test_indexes
-
-
 
 
 def create_command(datafile_path, default_root_dir, artifact_path, min_epochs=60, max_epochs=200):
@@ -114,7 +112,8 @@ def create_command(datafile_path, default_root_dir, artifact_path, min_epochs=60
     return command
 
 
-def train_model(train_data, val_data, test_data, output_folder, min_epochs=60, max_epochs=200, identifier=None, model_id=0):
+def train_model(train_data, val_data, test_data, output_folder, min_epochs=60, max_epochs=200, identifier=None,
+                model_id=0):
     if identifier is None:
         now = datetime.now()
         formatted_time = now.strftime("%Y-%m-%d_%H-%M-%S")
@@ -264,7 +263,8 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 import tarfile
-from boda import model as _model
+from boda2.boda import model as _model
+
 
 def unpack_artifact(artifact_path, download_path='./'):
     """
@@ -276,7 +276,7 @@ def unpack_artifact(artifact_path, download_path='./'):
     """
     print("Artifact Path:", artifact_path)
     if 'gs' in artifact_path:
-        subprocess.call(['gsutil','cp',artifact_path,download_path])
+        subprocess.call(['gsutil', 'cp', artifact_path, download_path])
         if os.path.isdir(download_path):
             tar_model = os.path.join(download_path, os.path.basename(artifact_path))
         elif os.path.isfile(download_path):
@@ -290,6 +290,7 @@ def unpack_artifact(artifact_path, download_path='./'):
     shutil.unpack_archive(tar_model, download_path)
     print(f'archive unpacked in {download_path}', file=sys.stderr)
 
+
 def model_fn(model_dir):
     """
     Load a model from a directory.
@@ -300,22 +301,22 @@ def model_fn(model_dir):
     Returns:
         torch.nn.Module: Loaded model in evaluation mode.
     """
-    print("Loading Torch Weights:", os.path.abspath(os.path.join(model_dir,'torch_checkpoint.pt')))
-    checkpoint = torch.load(os.path.join(model_dir,'torch_checkpoint.pt'), weights_only=False)
-    print("Loaded Torch Weights:", os.path.abspath(os.path.join(model_dir,'torch_checkpoint.pt')))
+    # print("Loading Torch Weights:", os.path.abspath(os.path.join(model_dir,'torch_checkpoint.pt')))
+    checkpoint = torch.load(os.path.join(model_dir, 'torch_checkpoint.pt'), weights_only=False)
+    # print("Loaded Torch Weights:", os.path.abspath(os.path.join(model_dir,'torch_checkpoint.pt')))
     model_module = getattr(_model, checkpoint['model_module'])
-    print("Attributes")
-    TEST = vars(checkpoint['model_hparams'])
-    print("VARS")
-    model        = model_module(**vars(checkpoint['model_hparams']))
-    print("Module")
+    # print("Attributes")
+    # TEST = vars(checkpoint['model_hparams'])
+    # print("VARS")
+    model = model_module(**vars(checkpoint['model_hparams']))
+    # print("Module")
     model.load_state_dict(checkpoint['model_state_dict'])
-    print(f'Loaded model from {checkpoint["timestamp"]} in eval mode')
+    # print(f'Loaded model from {checkpoint["timestamp"]} in eval mode')
     model.eval()
     return model
 
-def load_model(artifact_path, download_path="./", model_id=0):
 
+def load_model(artifact_path, download_path="./", model_id=0):
     USE_CUDA = torch.cuda.device_count() >= 1
 
     if os.path.isdir(download_path):
@@ -333,6 +334,7 @@ def load_model(artifact_path, download_path="./", model_id=0):
         my_model.to(device)
 
     return my_model, model_dir
+
 
 """
 The following code is an excerpt from https://github.com/sjgosai/boda2/blob/main/boda/common/utils.py 
@@ -361,6 +363,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+
 def dna2tensor(sequence_str, vocab_list=["A", "G", "C", "T"]):
     """
     Convert a DNA sequence to a one-hot encoded tensor.
@@ -382,6 +385,7 @@ def dna2tensor(sequence_str, vocab_list=["A", "G", "C", "T"]):
 """
 Modified from https://github.com/sjgosai/boda2/blob/main/src/train.py
 """
+
 
 def arg_parser(custom_args):
     parser = argparse.ArgumentParser(description="BODA trainer", add_help=False)

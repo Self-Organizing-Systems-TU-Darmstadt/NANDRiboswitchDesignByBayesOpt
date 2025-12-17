@@ -81,8 +81,8 @@ class BatchAcquisitionFunction:
                 if not my_setup.PREDICT_SCORE:
                     for iC, combi in enumerate(my_setup.LIGAND_COMBINATIONS):
                         cur_vals = model_outputs[proposed_index][iC]
-                        proposal_dict[combi + "_predictions"] = list(cur_vals)
-                        proposal_dict[combi] = np.mean(cur_vals, axis=-1)
+                        proposal_dict[combi + "_predictions"] = list(cur_vals.astype(float))
+                        proposal_dict[combi] = float(np.mean(cur_vals, axis=-1))
                 is_in_proposals = seq in proposals
                 is_in_measurements = seq in self.measurements.data["Sequence"].values
                 if is_in_proposals or is_in_measurements:
