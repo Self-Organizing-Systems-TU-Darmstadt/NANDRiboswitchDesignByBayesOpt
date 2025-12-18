@@ -32,7 +32,7 @@ regression:
 
 
 ensemble:
-  ensemble_size: 100
+  ensemble_size: 10
 
 
 training_encoder:
@@ -44,20 +44,13 @@ training_encoder:
 
 training_regression:
   predict_score: 0
-  max_epochs: 120
-  batch_size: 4
-  split: [ 0.75, 0.25 ] #[ ] is usable for 100% training split
-  learning_rate: 0.0001
-  learning_rate_gamma: 0.99
-  weight_decay: 0.0000001
-  train_encoder: 1
-  device: "cpu"
-  best_models_dir: "_regression_best_models"
+  max_epochs: 200
+  split: [ 0.75, 0.25 , 0 ]
 
 
 bayesian_optimization:
   n_init: 34
-  n_rounds: 3
+  n_rounds: 1
   acquisition_batch_size: 2 #16
   coverage_probability: 0.95
   normal_approximation_mode: 0

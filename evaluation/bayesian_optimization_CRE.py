@@ -4,7 +4,6 @@ import shutil
 import time
 from datetime import datetime
 from itertools import starmap
-from multiprocessing import Pool
 from multiprocessing.pool import ThreadPool
 
 import numpy as np
@@ -36,6 +35,9 @@ class PromoterEnsembleModel:
         self.ensemble_size = config["ensemble"]["ensemble_size"]
         self.ensemble_size = 1
 
+        self.max_epochs = config["regression"]["max_epochs"]
+        self.split = config["regression"]["split"]
+
         self.model_paths = [None] * self.ensemble_size
 
         self.pool_size = np.min([torch.cuda.device_count() * 2, os.cpu_count() - 6])
@@ -50,8 +52,6 @@ class PromoterEnsembleModel:
                                      flank_builder=flank_builder, model_id=model_id)
             return pred_df
 
-        # self.model_paths = ["_results/mpra_model/model_model_001\model_artifacts__20251216_162628__688811.tar.gz",
-        #                     "_results/mpra_model/model_model_000\model_artifacts__20251216_162627__634186.tar.gz"]
         model_paths = self.model_paths
         if any(map(lambda x: x is None, model_paths)):
             raise Exception("Model is not trained!")
@@ -60,7 +60,6 @@ class PromoterEnsembleModel:
                          enumerate(self.model_paths)]
 
         with ThreadPool(self.pool_size) as pool:
-            # model_path = train_model(*args)
             results = pool.starmap(apply_model, argument_list)
 
         model_outputs = np.stack([elem[["K562_preds", "HepG2_preds", "SKNSH_preds"]] for elem in results], axis=-1)
@@ -72,7 +71,7 @@ class PromoterEnsembleModel:
 
     def fit(self, measurements=None, *args, **kwargs):
 
-        split = [0.75, 0.25, 0.0]
+        split = self.split
 
         self.clear()
 
@@ -92,14 +91,17 @@ class PromoterEnsembleModel:
             identifier = f"model_{iX:03d}"
             output_folder = os.path.join("../_data_evaluation/CRE/custom/training_data/", f"{time_stamp}_{identifier}")
             os.makedirs(output_folder, exist_ok=True)
-            argument_list.append((train_data, val_data, test_data, output_folder, 1, 1, identifier, iX))
+            argument_list.append((train_data, val_data, test_data, output_folder, 60, 200, identifier, iX))
             # ToDO Change here the number of epochs
 
         start = time.time()
-        # with ThreadPool(self.pool_size) as pool:
-        #     # model_path = train_model(*args)
-        #     model_paths = pool.starmap(train_model, argument_list)
-        model_paths = list(starmap(train_model, argument_list))
+        with ThreadPool(self.pool_size) as pool:
+             # model_path = train_model(*args)
+            model_paths = pool.starmap(train_model, argument_list)
+
+        # model_paths = list(starmap(train_model, argument_list))
+
+        model_paths = list(model_paths)
         end = time.time()
 
         self.model_paths = model_paths
