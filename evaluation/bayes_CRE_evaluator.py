@@ -127,7 +127,7 @@ def full_bo_run(data, n_init, n_rounds, identifier="SingleRun", output_directory
             result_data.to_csv(output_file, sep="\t", index=False)
 
         if output_file_bo:
-            measurements.to_csv(output_file_bo(iR), sep="\t", index=False)
+            measurements.data.to_csv(output_file_bo(iR), sep="\t", index=False)
 
         print(f"{identifier} {iR}: Currently highest score {np.max(result_data['score'])}")
 
