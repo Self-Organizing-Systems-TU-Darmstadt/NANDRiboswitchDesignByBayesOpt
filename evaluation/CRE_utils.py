@@ -155,6 +155,7 @@ def train_model(train_data, val_data, test_data, output_folder, min_epochs=60, m
     from boda2.src import train
     args = arg_parser(joined_command.split(" ")[1:])
 
+    # ToDo Wrap with sys.stdout coverage
     train.main(args=args)
 
     #    print("Command:", f'bash -c "source ../bashrc; source activate base; conda activate boda2; conda info; python3 -V; CUDA_VISIBLE_DEVICES={device_id} {joined_command}"')

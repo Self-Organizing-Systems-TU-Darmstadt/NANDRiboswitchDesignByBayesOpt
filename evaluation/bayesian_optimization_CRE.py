@@ -93,6 +93,7 @@ class PromoterEnsembleModel:
             output_folder = os.path.join("../_data_evaluation/CRE/custom/training_data/", f"{time_stamp}_{identifier}")
             os.makedirs(output_folder, exist_ok=True)
             argument_list.append((train_data, val_data, test_data, output_folder, 1, 1, identifier, iX))
+            # ToDO Change here the number of epochs
 
         start = time.time()
         # with ThreadPool(self.pool_size) as pool:
@@ -245,10 +246,12 @@ def main(measurements, candidate_sequences, identifier=""):
     Perform Batch Acquisition Step
     """
     fit_args = {}
-
+    start = time.time()
     ac_func = acquisition_method(model=model, domain=domain, data=measurements, model_args=fit_args,
                                  model_output_transform=model_output_transform, config=config)
     proposals = ac_func(acquisition_batch_size)
+    end = time.time()
+    duration = end - start
 
     """
     Clean Up Model
