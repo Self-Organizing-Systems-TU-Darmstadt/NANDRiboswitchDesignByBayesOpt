@@ -101,7 +101,7 @@ class BatchAcquisitionFunction:
                 proposals[seq] = proposal_dict
                 new_entry = proposal_dict
             # The model is retrained after each iteration to prevent the bayesian optimization getting stuck
-            if len(proposals) < batch_size:
+            if len(proposals) <= batch_size:
                 self.update_model(new_entry, fit_model=not (len(proposals) == batch_size))
 
             iS += 1
