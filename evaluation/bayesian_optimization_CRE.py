@@ -17,7 +17,8 @@ from scipy.stats import norm
 import my_setup
 from bayesian_optimization.acquisition_functions import UpperConfidenceBound, BatchAcquisitionFunction
 # from evaluation.CRE_utils import *
-from evaluation.CRE_utils import dna2tensor, train_model, split_data, get_time_stamp, prepare_model, evaluate_model
+from evaluation.CRE_utils import dna2tensor, train_model, split_data, get_time_stamp, prepare_model, evaluate_model, \
+    starmap_pool
 
 
 class Measurements:
@@ -33,10 +34,9 @@ class PromoterEnsembleModel:
     def __init__(self, config):
         self.config = config
         self.ensemble_size = config["ensemble"]["ensemble_size"]
-        self.ensemble_size = 1
 
-        self.max_epochs = config["regression"]["max_epochs"]
-        self.split = config["regression"]["split"]
+        self.max_epochs = config["training_regression"]["max_epochs"]
+        self.split = config["training_regression"]["split"]
 
         self.model_paths = [None] * self.ensemble_size
 
@@ -59,8 +59,9 @@ class PromoterEnsembleModel:
         argument_list = [(model_path, f"model_{iX:03d}", iX, domain[0], domain[1]) for iX, model_path in
                          enumerate(self.model_paths)]
 
-        with ThreadPool(self.pool_size) as pool:
-            results = pool.starmap(apply_model, argument_list)
+        # with ThreadPool(self.pool_size) as pool:
+        #    results = pool.starmap(apply_model, argument_list)
+        results = starmap_pool(apply_model, argument_list, wait_time=1, sleep_time=10, pool_size=self.pool_size, pool_name="Ensemble Evaluation")
 
         model_outputs = np.stack([elem[["K562_preds", "HepG2_preds", "SKNSH_preds"]] for elem in results], axis=-1)
 
@@ -91,13 +92,13 @@ class PromoterEnsembleModel:
             identifier = f"model_{iX:03d}"
             output_folder = os.path.join("../_data_evaluation/CRE/custom/training_data/", f"{time_stamp}_{identifier}")
             os.makedirs(output_folder, exist_ok=True)
-            argument_list.append((train_data, val_data, test_data, output_folder, 60, 200, identifier, iX))
-            # ToDO Change here the number of epochs
+            argument_list.append((train_data, val_data, test_data, output_folder, min(60, self.max_epochs), self.max_epochs, identifier, iX))
 
         start = time.time()
-        with ThreadPool(self.pool_size) as pool:
-             # model_path = train_model(*args)
-            model_paths = pool.starmap(train_model, argument_list)
+        # with ThreadPool(self.pool_size) as pool:
+        #    model_paths = pool.starmap(train_model, argument_list)
+
+        model_paths = starmap_pool(train_model, argument_list, wait_time=30, sleep_time=60, pool_size=self.pool_size, pool_name="Ensemble Training")
 
         # model_paths = list(starmap(train_model, argument_list))
 

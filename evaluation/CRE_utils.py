@@ -3,7 +3,9 @@ import os
 import shutil
 import subprocess
 import sys
+import time
 from datetime import datetime
+from multiprocessing.pool import ThreadPool
 
 import numpy as np
 import pandas as pd
@@ -152,16 +154,15 @@ def train_model(train_data, val_data, test_data, output_folder, min_epochs=60, m
     joined_command = " ".join(command)
 
     # print("COMMAND:", joined_command)
-    from boda2.src import train
-    args = arg_parser(joined_command.split(" ")[1:])
+    # from boda2.src import train
+    # args = arg_parser(joined_command.split(" ")[1:])
 
-    # ToDo Wrap with sys.stdout coverage
-    train.main(args=args)
+    # # ToDo Wrap with sys.stdout coverage
+    # train.main(args=args)
 
     #    print("Command:", f'bash -c "source ../bashrc; source activate base; conda activate boda2; conda info; python3 -V; CUDA_VISIBLE_DEVICES={device_id} {joined_command}"')
     # result = subprocess.run(f'bash -c "source ../bashrc; source activate base; conda activate boda2; pip3 uninstall -y numpy; pip3 install -U numpy; conda info; python3 -V; {joined_command}"', capture_output=False, shell=True)
-    # result = subprocess.run(f'bash -c "source ../bashrc; source activate base; conda activate boda2; conda info; python3 -V; CUDA_VISIBLE_DEVICES={device_id} {joined_command}"', capture_output=True, shell=True)
-    # result = subprocess.run(f'source activate base; conda activate  C:/Users/C3PO-9/anaconda3/envs/NANDRiboswitchDesignByBayesOpt; conda info; python -V; CUDA_VISIBLE_DEVICES={device_id} {joined_command}', capture_output=True, shell=True)
+    result = subprocess.run(f'bash -c "source ../bashrc; source activate base; conda activate NANDRiboswitchDesignByBayesOpt; conda info; python3 -V; CUDA_VISIBLE_DEVICES={device_id} {joined_command}"', capture_output=True, shell=True)
     # print("STDOUT:", result.stdout)
     # print("")
     # print("STDERR:", result.stderr)
@@ -175,21 +176,63 @@ def train_model(train_data, val_data, test_data, output_folder, min_epochs=60, m
     artifact_file_path = os.path.join(artifact_path, artifact_files[0])
     return artifact_file_path
 
+def starmap_pool(func, iterable, wait_time = 1, sleep_time=1, pool_size=10, pool_name=""):
+    results = []
+
+    prefix = f"{pool_name}_" if pool_name else ""
+    with ThreadPool(processes=pool_size) as pool:
+        for elem in iterable:
+            result = pool.apply_async(func, elem)
+            results.append(result)
+            time.sleep(wait_time)
+
+        all_completed = False
+        iX = 0
+        while not all_completed:
+            all_completed = True
+            completed_results = []
+            errornous_results = []
+            for iR, result in enumerate(results):
+                is_ready = result.ready()
+                all_completed = all_completed and is_ready
+                if is_ready:
+                    completed_results.append(result)
+                    if not result.successful():
+                        errornous_results.append(result.get())
+
+            print(
+                f"{prefix}STATUS {iX}: {len(completed_results)} completed and {len(errornous_results)} failed ({len(results) - len(completed_results)} still running)")
+            if not all_completed:
+                time.sleep(sleep_time)
+            iX += 1
+
+        outputs = [result.get() for result in results]
+        pool.close()
+        pool.join()
+
+    return outputs
+
+"""
+The following code follows the train tutorial of 
+Copyright (c) 2025 Sagar Gosai, Rodrigo Castro
+"""
+
 
 def create_flank_builder(input_len):
+
     left_pad_len = (input_len - 200) // 2
     right_pad_len = (input_len - 200) - left_pad_len
 
     left_flank = boda.common.utils.dna2tensor(
         boda.common.constants.MPRA_UPSTREAM[-left_pad_len:]
     ).unsqueeze(0)
-    print(f'left flank shape: {left_flank.shape}')
+    # print(f'left flank shape: {left_flank.shape}')
 
     right_flank = boda.common.utils.dna2tensor(
         boda.common.constants.MPRA_DOWNSTREAM[:right_pad_len]
     ).unsqueeze(0)
     right_flank.shape
-    print(f'right flank shape: {right_flank.shape}')
+    # print(f'right flank shape: {right_flank.shape}')
 
     flank_builder = boda.common.utils.FlankBuilder(
         left_flank=left_flank,
