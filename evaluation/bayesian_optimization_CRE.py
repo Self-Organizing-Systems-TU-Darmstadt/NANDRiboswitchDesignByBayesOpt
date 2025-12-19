@@ -31,7 +31,7 @@ class Measurements:
 
 
 class PromoterEnsembleModel:
-    def __init__(self, config):
+    def __init__(self, config, identifier):
         self.config = config
         self.ensemble_size = config["ensemble"]["ensemble_size"]
 
@@ -41,6 +41,7 @@ class PromoterEnsembleModel:
         self.model_paths = [None] * self.ensemble_size
 
         self.pool_size = np.min([torch.cuda.device_count() * 2, os.cpu_count() - 6])
+        self.identifier = identifier
 
     def __call__(self, domain, train_mode=False, combine_outputs=True, evaluate_parallel=True, output_attentions=False,
                  *args, **kwargs):
@@ -56,7 +57,7 @@ class PromoterEnsembleModel:
         if any(map(lambda x: x is None, model_paths)):
             raise Exception("Model is not trained!")
 
-        argument_list = [(model_path, f"model_{iX:03d}", iX, domain[0], domain[1]) for iX, model_path in
+        argument_list = [(model_path, f"{self.identifier}_model_{iX:03d}", iX, domain[0], domain[1]) for iX, model_path in
                          enumerate(self.model_paths)]
 
         # with ThreadPool(self.pool_size) as pool:
@@ -89,7 +90,7 @@ class PromoterEnsembleModel:
             if split[2] == 0.0:
                 test_data = pd.DataFrame(data.iloc[:2])
 
-            identifier = f"model_{iX:03d}"
+            identifier = f"{self.identifier}_model_{iX:03d}"
             output_folder = os.path.join("../_data_evaluation/CRE/custom/training_data/", f"{time_stamp}_{identifier}")
             os.makedirs(output_folder, exist_ok=True)
             argument_list.append((train_data, val_data, test_data, output_folder, min(60, self.max_epochs), self.max_epochs, identifier, iX))
@@ -98,7 +99,7 @@ class PromoterEnsembleModel:
         # with ThreadPool(self.pool_size) as pool:
         #    model_paths = pool.starmap(train_model, argument_list)
 
-        model_paths = starmap_pool(train_model, argument_list, wait_time=30, sleep_time=60, pool_size=self.pool_size, pool_name="Ensemble Training")
+        model_paths = starmap_pool(train_model, argument_list, wait_time=0, sleep_time=60, pool_size=self.pool_size, pool_name="Ensemble Training")
 
         # model_paths = list(starmap(train_model, argument_list))
 
@@ -224,7 +225,7 @@ def main(measurements, candidate_sequences, identifier=""):
     """
     Setup the model
     """
-    model = PromoterEnsembleModel(config)
+    model = PromoterEnsembleModel(config, identifier=identifier)
     print("Model Created")
 
     model_output_transform = None

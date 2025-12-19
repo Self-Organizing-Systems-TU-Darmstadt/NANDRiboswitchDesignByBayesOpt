@@ -32,7 +32,7 @@ regression:
 
 
 ensemble:
-  ensemble_size: 10
+  ensemble_size: 100
 
 
 training_encoder:
@@ -50,8 +50,8 @@ training_regression:
 
 bayesian_optimization:
   n_init: 34
-  n_rounds: 1
-  acquisition_batch_size: 2 #16
+  n_rounds: 3
+  acquisition_batch_size: 16 #16
   coverage_probability: 0.95
   normal_approximation_mode: 0
 

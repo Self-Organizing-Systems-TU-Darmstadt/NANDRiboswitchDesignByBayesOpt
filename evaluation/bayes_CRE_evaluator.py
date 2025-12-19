@@ -1,3 +1,4 @@
+import argparse
 import os
 import time
 
@@ -58,7 +59,7 @@ def standalone_data_creation():
     measurements.to_csv(measurements_file, index=False, sep="\t")
 
 
-def integrated_bayesian_optimization():
+def integrated_bayesian_optimization(n_runs=1):
     with open("config.yaml", "r") as file:
         config = yaml.safe_load(file)
 
@@ -81,7 +82,6 @@ def integrated_bayesian_optimization():
     data["Sequence"] = data["sequence"]
 
     data = data.loc[np.logical_not(np.isnan(data["score"]))]
-    data = pd.DataFrame(data.iloc[:1000])
 
     print(f"Maximum Score is {data['score'].max()}")
 
@@ -90,14 +90,17 @@ def integrated_bayesian_optimization():
     - Measurements Dataframe
     - Candidates (same for all) 
     """
-    time_stamp = get_time_stamp()
 
-    output_directory = os.path.join("_results", time_stamp)
-    start = time.time()
-    full_bo_run(data, n_init, n_rounds, identifier="bayesian_optimization_test", output_directory=output_directory)
-    end = time.time()
-    duration = end - start
-    print(f"Full BO run with {n_rounds} rounds and q={q} took {duration}s")
+    for iRun in range(n_runs):
+        time_stamp = get_time_stamp()
+
+        output_directory = os.path.join("_results", f"{time_stamp}_run_{iRun}")
+        start = time.time()
+        full_bo_run(data, n_init, n_rounds, identifier=f"bayesian_optimization_run_{iRun}",
+                    output_directory=output_directory)
+        end = time.time()
+        duration = end - start
+        print(f"Full BO run ({iRun}) with {n_rounds} rounds and q={q} took {duration}s")
 
 
 def full_bo_run(data, n_init, n_rounds, identifier="SingleRun", output_directory=None):
@@ -137,7 +140,13 @@ def full_bo_run(data, n_init, n_rounds, identifier="SingleRun", output_directory
 
 
 if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description="Evaluate the performance of Bayesian optimization")
+    parser.add_argument("-n", "--n_runs", type=int, help="Number of runs to run.", default=1)
+    args = parser.parse_args()
+
     # standalone_data_creation()
-    integrated_bayesian_optimization()
+
+    n_runs = 1
+    integrated_bayesian_optimization(n_runs=n_runs)
 
     pass
