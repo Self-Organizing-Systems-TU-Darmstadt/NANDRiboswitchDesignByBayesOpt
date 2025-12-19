@@ -146,7 +146,7 @@ if __name__ == '__main__':
 
     # standalone_data_creation()
 
-    n_runs = 1
+    n_runs = args.n_runs
     integrated_bayesian_optimization(n_runs=n_runs)
 
     pass
