@@ -120,8 +120,6 @@ class PromoterEnsembleModel:
                 if model_path is not None and os.path.exists(model_path):
                     os.remove(model_path)
 
-                print("ToDo: Tidy up all the other stuff of the model")
-
         if os.path.exists("_results/mpra_model/"):
             shutil.rmtree("_results/mpra_model/", ignore_errors=True)
         if os.path.exists("/tmp/output/"):

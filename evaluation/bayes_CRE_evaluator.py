@@ -1,4 +1,5 @@
 import os
+import time
 
 import numpy as np
 import pandas as pd
@@ -92,8 +93,11 @@ def integrated_bayesian_optimization():
     time_stamp = get_time_stamp()
 
     output_directory = os.path.join("_results", time_stamp)
-
+    start = time.time()
     full_bo_run(data, n_init, n_rounds, identifier="bayesian_optimization_test", output_directory=output_directory)
+    end = time.time()
+    duration = end - start
+    print(f"Full BO run with {n_rounds} rounds and q={q} took {duration}s")
 
 
 def full_bo_run(data, n_init, n_rounds, identifier="SingleRun", output_directory=None):
