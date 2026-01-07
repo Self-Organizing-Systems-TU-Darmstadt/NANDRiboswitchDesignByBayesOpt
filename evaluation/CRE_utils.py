@@ -412,7 +412,7 @@ SOFTWARE.
 """
 
 
-def dna2tensor(sequence_str, vocab_list=["A", "G", "C", "T"]):
+def dna2tensor(sequence_str, vocab_list=["A", "C", "G", "T"]):
     """
     Convert a DNA sequence to a one-hot encoded tensor.
 
