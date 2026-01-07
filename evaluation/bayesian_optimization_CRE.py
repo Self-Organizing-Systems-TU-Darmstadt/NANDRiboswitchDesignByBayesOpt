@@ -32,10 +32,12 @@ class Measurements:
 
 def custom_starmap(func, inputs, identifier=""):
     results = []
+    start = time.time()
     for iX, inp in enumerate(inputs):
         result = func(*inp)
         results.append(result)
-        print(f"{identifier}: completed {iX+1}. of {len(inputs)} ({iX+1}/{len(inputs)}).")
+        cur_time = time.time()
+        print(f"{identifier}: completed {iX+1} of {len(inputs)} ({iX+1}/{len(inputs)}%) avg. time={cur_time-start/{iX+1}:.2f}s, total time={cur_time-start:.2f}s.")
     return results
 
 class PromoterEnsembleModel:
