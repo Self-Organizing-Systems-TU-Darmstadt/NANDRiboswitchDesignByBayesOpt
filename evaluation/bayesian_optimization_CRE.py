@@ -30,6 +30,14 @@ class Measurements:
         return len(self.data)
 
 
+def custom_starmap(func, inputs, identifier=""):
+    results = []
+    for iX, inp in enumerate(inputs):
+        result = func(*inp)
+        results.append(result)
+        print(f"{identifier}: completed {iX+1}. of {len(inputs)} ({iX+1}/{len(inputs)}).")
+    return results
+
 class PromoterEnsembleModel:
     def __init__(self, config, identifier):
         self.config = config
@@ -62,7 +70,9 @@ class PromoterEnsembleModel:
 
         # with ThreadPool(self.pool_size) as pool:
         #    results = pool.starmap(apply_model, argument_list)
-        results = starmap_pool(apply_model, argument_list, wait_time=1, sleep_time=10, pool_size=self.pool_size, pool_name="Ensemble Evaluation")
+
+        # results = starmap_pool(apply_model, argument_list, wait_time=1, sleep_time=10, pool_size=self.pool_size, pool_name="Ensemble Evaluation")
+        results =  custom_starmap(apply_model, argument_list, identifier="Inference")
 
         model_outputs = np.stack([elem[["K562_preds", "HepG2_preds", "SKNSH_preds"]] for elem in results], axis=-1)
 
@@ -101,7 +111,8 @@ class PromoterEnsembleModel:
         #    model_paths = pool.starmap(train_model, argument_list)
 
         # model_paths = starmap_pool(train_model, argument_list, wait_time=0, sleep_time=60, pool_size=self.pool_size, pool_name="Ensemble Training")
-        model_paths = list(starmap(train_model, argument_list))
+        # model_paths = list(starmap(train_model, argument_list))
+        model_paths = custom_starmap(train_model, argument_list, identifier="Training")
 
         model_paths = list(model_paths)
         end = time.time()
