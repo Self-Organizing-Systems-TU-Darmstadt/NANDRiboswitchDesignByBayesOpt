@@ -95,13 +95,13 @@ class PromoterEnsembleModel:
             os.makedirs(output_folder, exist_ok=True)
             argument_list.append((train_data, val_data, test_data, output_folder, min(60, self.max_epochs), self.max_epochs, identifier, iX))
 
+
         start = time.time()
         # with ThreadPool(self.pool_size) as pool:
         #    model_paths = pool.starmap(train_model, argument_list)
 
-        model_paths = starmap_pool(train_model, argument_list, wait_time=0, sleep_time=60, pool_size=self.pool_size, pool_name="Ensemble Training")
-
-        # model_paths = list(starmap(train_model, argument_list))
+        # model_paths = starmap_pool(train_model, argument_list, wait_time=0, sleep_time=60, pool_size=self.pool_size, pool_name="Ensemble Training")
+        model_paths = list(starmap(train_model, argument_list))
 
         model_paths = list(model_paths)
         end = time.time()
