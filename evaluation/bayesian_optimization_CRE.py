@@ -37,8 +37,10 @@ def custom_starmap(func, inputs, identifier=""):
         result = func(*inp)
         results.append(result)
         cur_time = time.time()
-        print(f"{identifier}: completed {iX+1} of {len(inputs)} ({iX+1}/{len(inputs)}%) avg. time={cur_time-start/{iX+1}:.2f}s, total time={cur_time-start:.2f}s.")
+        print(
+            f"{identifier}: completed {iX + 1} of {len(inputs)} ({(iX + 1) / len(inputs)}%) avg. time={(cur_time - start) / (iX + 1):.2f}s, total time={cur_time - start:.2f}s.")
     return results
+
 
 class PromoterEnsembleModel:
     def __init__(self, config, identifier):
@@ -67,14 +69,15 @@ class PromoterEnsembleModel:
         if any(map(lambda x: x is None, model_paths)):
             raise Exception("Model is not trained!")
 
-        argument_list = [(model_path, f"{self.identifier}_model_{iX:03d}", iX, domain[0], domain[1]) for iX, model_path in
+        argument_list = [(model_path, f"{self.identifier}_model_{iX:03d}", iX, domain[0], domain[1]) for iX, model_path
+                         in
                          enumerate(self.model_paths)]
 
         # with ThreadPool(self.pool_size) as pool:
         #    results = pool.starmap(apply_model, argument_list)
 
         # results = starmap_pool(apply_model, argument_list, wait_time=1, sleep_time=10, pool_size=self.pool_size, pool_name="Ensemble Evaluation")
-        results =  custom_starmap(apply_model, argument_list, identifier="Inference")
+        results = custom_starmap(apply_model, argument_list, identifier="Inference")
 
         model_outputs = np.stack([elem[["K562_preds", "HepG2_preds", "SKNSH_preds"]] for elem in results], axis=-1)
 
@@ -105,8 +108,9 @@ class PromoterEnsembleModel:
             identifier = f"{self.identifier}_model_{iX:03d}"
             output_folder = os.path.join("../_data_evaluation/CRE/custom/training_data/", f"{time_stamp}_{identifier}")
             os.makedirs(output_folder, exist_ok=True)
-            argument_list.append((train_data, val_data, test_data, output_folder, min(60, self.max_epochs), self.max_epochs, identifier, iX))
-
+            argument_list.append(
+                (train_data, val_data, test_data, output_folder, min(60, self.max_epochs), self.max_epochs, identifier,
+                 iX))
 
         start = time.time()
         # with ThreadPool(self.pool_size) as pool:
