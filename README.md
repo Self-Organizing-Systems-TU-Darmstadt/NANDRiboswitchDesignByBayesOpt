@@ -198,6 +198,9 @@ Kelvin, D.; Kubaczka, E.; Koeppl, H.; Suess, B. NAND Hybrid Riboswitch Design by
 }
 ```
 
+## Evaluation
+To reproduce the evaluation results on the promoter dataset by Gosai et al. (Nature 2024), please follow along the [readme](evaluation/readme.md) in the evaluation directory.
+
 ## License
 The code and the data is available under an MIT License. Please cite the corresponding preprint if you use our code and/or data.
 
