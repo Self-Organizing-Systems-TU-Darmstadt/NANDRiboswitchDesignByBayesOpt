@@ -45,9 +45,6 @@ def load_results(dir_path):
     results_data = []
     identifier = os.path.dirname(dir_path).split(os.sep)[-1].split("_")[0]
     for path in file_paths:
-        # basename = os.path.basename(path)
-        # name = os.splitext(basename)[0]
-        # model_id = int(name.split("_")[-1])
         df = pd.read_csv(path, sep="\t")
         results_data.append(df)
 
@@ -153,15 +150,6 @@ def train_model(train_data, val_data, test_data, output_folder, min_epochs=60, m
                              max_epochs=max_epochs)
     joined_command = " ".join(command)
 
-    # print("COMMAND:", joined_command)
-    # from boda2.src import train
-    # args = arg_parser(joined_command.split(" ")[1:])
-
-    # # ToDo Wrap with sys.stdout coverage
-    # train.main(args=args)
-
-    #    print("Command:", f'bash -c "source ../bashrc; source activate base; conda activate boda2; conda info; python3 -V; CUDA_VISIBLE_DEVICES={device_id} {joined_command}"')
-    # result = subprocess.run(f'bash -c "source ../bashrc; source activate base; conda activate boda2; pip3 uninstall -y numpy; pip3 install -U numpy; conda info; python3 -V; {joined_command}"', capture_output=False, shell=True)
     result = subprocess.run(f'bash -c "source ../bashrc; source activate base; conda activate NANDRiboswitchDesignByBayesOpt; conda info; python3 -V; CUDA_VISIBLE_DEVICES={device_id} {joined_command}"', capture_output=True, shell=True)
     # print("STDOUT:", result.stdout)
     # print("")
