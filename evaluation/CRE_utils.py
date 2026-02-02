@@ -150,7 +150,7 @@ def train_model(train_data, val_data, test_data, output_folder, min_epochs=60, m
                              max_epochs=max_epochs)
     joined_command = " ".join(command)
 
-    result = subprocess.run(f'bash -c "source ../bashrc; source activate base; conda activate NANDRiboswitchDesignByBayesOpt; conda info; python3 -V; CUDA_VISIBLE_DEVICES={device_id} {joined_command}"', capture_output=True, shell=True)
+    result = subprocess.run(f'bash -c "source ../../bashrc; source activate base; conda activate NANDRiboswitchDesignByBayesOpt; conda info; python3 -V; CUDA_VISIBLE_DEVICES={device_id} {joined_command}"', capture_output=False, shell=True)
     # print("STDOUT:", result.stdout)
     # print("")
     # print("STDERR:", result.stderr)

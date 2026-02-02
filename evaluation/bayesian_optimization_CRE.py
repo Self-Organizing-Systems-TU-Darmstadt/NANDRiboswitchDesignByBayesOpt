@@ -113,11 +113,6 @@ class PromoterEnsembleModel:
                  iX))
 
         start = time.time()
-        # with ThreadPool(self.pool_size) as pool:
-        #    model_paths = pool.starmap(train_model, argument_list)
-
-        # model_paths = starmap_pool(train_model, argument_list, wait_time=0, sleep_time=60, pool_size=self.pool_size, pool_name="Ensemble Training")
-        # model_paths = list(starmap(train_model, argument_list))
         model_paths = custom_starmap(train_model, argument_list, identifier="Training")
 
         model_paths = list(model_paths)
