@@ -1,12 +1,15 @@
+[![Generic badge](https://img.shields.io/badge/Nucleic_Acids_Research_DOI-10.1093/nar/gkag145-green.svg)](https://doi.org/10.1093/nar/gkag145)
 [![DOI](https://zenodo.org/badge/942468189.svg)](https://doi.org/10.5281/zenodo.15185168)
 
 # Iterative Design of a NAND Hybrid Riboswitch by Deep Batch Bayesian Optimization
-This repository provides the code and data corresponding to the paper [**Iterative Design of a NAND Hybrid Riboswitch by Deep Batch Bayesian Optimization**](https://www.biorxiv.org/content/10.1101/2025.03.28.645907v1)
- by Daniel Kelvin\$, Erik Kubaczka\$, Heinz Koeppl*, and Beatrix Suess*, currently available as preprint on bioRxiv.
+This repository provides the code and data corresponding to the paper [**Iterative Design of a NAND Hybrid Riboswitch by Deep Batch Bayesian Optimization**](https://doi.org/10.1093/nar/gkag145)
+ by Daniel Kelvin\$, Erik Kubaczka\$, Marianna Karava, Heinz Koeppl*, and Beatrix Suess*. This paper is published in Nucleic Acids Research.
 
-DK, BS: Department of Biology, TU Darmstadt, Darmstadt, 64287, Germany  
+DK, MK, BS: Department of Biology, TU Darmstadt, Darmstadt, 64287, Germany  
 DK, EK, HK: Department of Electrical Engineering and Information Technology, TU Darmstadt, Darmstadt, 64283, Germany  
 DK, EK, HK, BS: Centre for Synthetic Biology, TU Darmstadt, Darmstadt, 64283, Germany
+MK: Institute of Molecular Biotechnology, Graz University of Technology, Graz 8010, Austria
+MK: Austrian Center of Industrial Biotechnology, Graz 8010, Austria
 
 $ These authors contributed equally.  
 \* Correspondence can be addressed to bsuess@bio.tu-darmstadt.de and heinz.koeppl@tu-darmstadt.de.
