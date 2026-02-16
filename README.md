@@ -415,8 +415,10 @@ To reproduce the evaluation results on the promoter dataset by Gosai et al. (Nat
 The code and the data is available under an MIT License. Please cite the corresponding preprint if you use our code and/or data.
 
 ## Funding & Acknowledgments
-D.K. and B.S. were supported by the Deutsche Forschungsgemeinschaft (DFG) CRC 902(A2). 
-E.K. and H.K. were supported by ERC-PoC grant PLATE (101082333). 
+D.K. and B.S. were supported by the Deutsche Forschungsgemeinschaft (DFG) CRC 902(A2).
+E.K. and H.K. acknowledge funding by the ERC-PoC grant PLATE (101082333) and the excellence program of the state of Hesse—LOEWE top professorships [LOEWE/4a/519/05/00.003(0007)/121], and support from the hessian.AI Service Center (funded by the Federal Ministry of Research, Technology and Space, BMFTR, grant no. 16IS22091) and the hessian.AI Innovation Lab (funded by the Hessian Ministry for Digital Strategy and Innovation, grant no. S-DIW04/0013/003).
+E.K. was partially funded by the German Federal Ministry of Research, Technology and Space (BMFTR) as part of the research program “Software Campus” within the Project Management Agency for Artificial Intelligence.
 Views and opinions expressed are however those of the author(s) only and do not necessarily reflect those of the funding agencies.
+Funding to pay the Open Access publication charges for this article was provided by the Deutsche Forschungsgemeinschaft (DFG).
 
 We acknowledge the use of Python and the aforementioned Python packages.
