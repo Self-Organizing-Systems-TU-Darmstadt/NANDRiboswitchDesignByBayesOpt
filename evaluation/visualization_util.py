@@ -2,9 +2,10 @@ import matplotlib
 import numpy as np
 from matplotlib.colors import LinearSegmentedColormap
 
+
 font = {'family': 'serif',
         # 'serif': ['Computer Modern'],
-        'serif': ['Helvetica'],
+        'serif': ['Helvetica', 'DejaVu Sans'],
         # 'weight': 'bold',
         'size': 8}
 

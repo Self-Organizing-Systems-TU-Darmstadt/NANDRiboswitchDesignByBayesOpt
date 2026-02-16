@@ -51,7 +51,7 @@ training_regression:
 bayesian_optimization:
   n_init: 34
   n_rounds: 3
-  acquisition_batch_size: 16 #16
+  acquisition_batch_size: 16
   coverage_probability: 0.95
   normal_approximation_mode: 0
 
