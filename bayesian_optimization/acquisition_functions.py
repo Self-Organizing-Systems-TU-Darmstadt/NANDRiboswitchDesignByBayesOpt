@@ -66,9 +66,8 @@ class BatchAcquisitionFunction:
             searching_proposal = True
             while searching_proposal:
                 proposed_index = np.argmax(u_func_vals)
-                proposal = domain[0][proposed_index], domain[1][proposed_index]
-                seq = proposal[0]
-                tokens = proposal[1]
+                proposal = domain[0][proposed_index]
+                seq = proposal
                 utility_value = u_func_vals[proposed_index]
                 value = pred[proposed_index]
                 print(f"Proposed: {seq} (value = {value}, utility_value = {utility_value})", file=self.log_file)
@@ -82,8 +81,8 @@ class BatchAcquisitionFunction:
                 if not my_setup.PREDICT_SCORE:
                     for iC, combi in enumerate(my_setup.LIGAND_COMBINATIONS):
                         cur_vals = model_outputs[proposed_index][iC]
-                        proposal_dict[combi + "_predictions"] = list(cur_vals)
-                        proposal_dict[combi] = np.mean(cur_vals, axis=-1)
+                        proposal_dict[combi + "_predictions"] = list(cur_vals.astype(float))
+                        proposal_dict[combi] = float(np.mean(cur_vals, axis=-1))
                 is_in_proposals = seq in proposals
                 is_in_measurements = seq in self.measurements.data["Sequence"].values
                 if is_in_proposals or is_in_measurements:
@@ -91,7 +90,7 @@ class BatchAcquisitionFunction:
                     print("Proposed sequence is in %s and therefore discarded." % ident_str, file=self.log_file)
                     print("Proposal is:", proposal_dict, file=self.log_file)
                     print("", file=self.log_file)
-                    u_func_vals[proposed_index] = -np.infty
+                    u_func_vals[proposed_index] = -np.inf
                     pass
                 else:
                     searching_proposal = False

@@ -23,7 +23,7 @@ if __name__ == '__main__':
     with open("config.yaml", "r") as file:
         config = yaml.safe_load(file)
 
-    multiprocessing.set_start_method("spawn")
+    multiprocessing.set_start_method("spawn", force=True)
 
     my_setup.DEVICE = "cpu"
     my_setup.DEVICE_TRAINING = "cpu"

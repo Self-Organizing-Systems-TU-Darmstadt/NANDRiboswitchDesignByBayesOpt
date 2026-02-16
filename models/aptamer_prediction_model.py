@@ -188,8 +188,7 @@ class JointModel(nn.Module):
 
         if True:
             warmup_epochs = 4
-            torch_lr_scheduler = ExponentialLR(optimizer=optimizer, gamma=fit_config["learning_rate_gamma"],
-                                               verbose=False)
+            torch_lr_scheduler = ExponentialLR(optimizer=optimizer, gamma=fit_config["learning_rate_gamma"])
 
             scheduler = create_lr_scheduler_with_warmup(torch_lr_scheduler,
                                                         warmup_start_value=learning_rate * 10 ** (-5),
